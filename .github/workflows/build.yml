@@ -1,0 +1,89 @@
+name: Build & publish Paperclip image
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      force_build:
+        description: "Force rebuild even if no new upstream release"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  check-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get latest upstream tag
+        id: upstream
+        run: |
+          LATEST_TAG=$(git ls-remote --tags --sort=-v:refname \
+            https://github.com/paperclipai/paperclip.git \
+            'refs/tags/v*' | head -1 | sed 's|.*refs/tags/||')
+          echo "tag=${LATEST_TAG}" >> "$GITHUB_OUTPUT"
+          echo "Latest upstream tag: ${LATEST_TAG}"
+
+      - name: Check if tag already built
+        id: check
+        env:
+          UPSTREAM_TAG: ${{ steps.upstream.outputs.tag }}
+          FORCE_BUILD: ${{ inputs.force_build }}
+        run: |
+          if [ "$FORCE_BUILD" = "true" ]; then
+            echo "needs_build=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if docker manifest inspect "ghcr.io/${{ github.repository }}:${UPSTREAM_TAG}" > /dev/null 2>&1; then
+            echo "Tag ${UPSTREAM_TAG} already built, skipping"
+            echo "needs_build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Tag ${UPSTREAM_TAG} not found in GHCR, building"
+            echo "needs_build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Track built tag
+        if: steps.check.outputs.needs_build == 'true'
+        env:
+          UPSTREAM_TAG: ${{ steps.upstream.outputs.tag }}
+        run: |
+          echo "$UPSTREAM_TAG" > .last-built-tag
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .last-built-tag
+          git diff --cached --quiet || {
+            git commit -m "ci: track built tag ${UPSTREAM_TAG}"
+            git push
+          }
+
+      - name: Set up Docker Buildx
+        if: steps.check.outputs.needs_build == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: steps.check.outputs.needs_build == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        if: steps.check.outputs.needs_build == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          build-args: |
+            PAPERCLIP_REF=${{ steps.upstream.outputs.tag }}
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ steps.upstream.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
