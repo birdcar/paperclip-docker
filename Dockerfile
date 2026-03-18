@@ -9,6 +9,8 @@ ARG PAPERCLIP_REF=master
 WORKDIR /app
 RUN git clone --depth=1 -b "$PAPERCLIP_REF" https://github.com/paperclipai/paperclip.git .
 RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @paperclipai/shared build
+RUN pnpm --filter @paperclipai/plugin-sdk build
 RUN pnpm --filter @paperclipai/ui build
 RUN pnpm --filter @paperclipai/server build
 RUN test -f server/dist/index.js || (echo "ERROR: server build output missing" && exit 1)
