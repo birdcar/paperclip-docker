@@ -1,3 +1,8 @@
+# documentation: https://github.com/birdcar/paperclip-docker
+# slogan: AI agent orchestration platform with Claude Code, OpenClaw, and S3 storage.
+# tags: ai,agents,claude,paperclip,orchestration
+# port: 3100
+
 services:
   paperclip:
     image: ghcr.io/birdcar/paperclip-docker:latest

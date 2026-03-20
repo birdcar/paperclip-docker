@@ -48,7 +48,8 @@ For a production deployment on [Coolify](https://coolify.io) with Claude Max sub
 and OpenClaw integration, see [docs/coolify-setup.md](docs/coolify-setup.md).
 
 The included `docker-compose.yml` is designed for Coolify's Docker Compose deployment mode
-and uses Coolify's magic variables for auto-generated secrets and domain routing.
+and uses Coolify's magic variables for auto-generated secrets and domain routing. It includes
+MinIO for S3-compatible file storage, pre-configured with auto-generated credentials.
 
 ## Configuration
 
