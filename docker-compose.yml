@@ -1,0 +1,39 @@
+services:
+  paperclip:
+    image: ghcr.io/birdcar/paperclip-docker:latest
+    environment:
+      # Coolify auto-generated
+      - SERVICE_FQDN_PAPERCLIP_3100
+      - BETTER_AUTH_SECRET=${SERVICE_PASSWORD_64_AUTHSECRET}
+      - PAPERCLIP_PUBLIC_URL=${SERVICE_FQDN_PAPERCLIP_3100}
+
+      # Deployment mode
+      - PAPERCLIP_DEPLOYMENT_MODE=authenticated
+      - PAPERCLIP_DEPLOYMENT_EXPOSURE=private
+
+      # Claude Code auth (Max subscription — do NOT set ANTHROPIC_API_KEY)
+      - CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN}
+
+      # Server defaults (inherited from image, explicit for clarity)
+      - HOST=0.0.0.0
+      - PORT=3100
+    volumes:
+      - paperclip-data:/paperclip
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3100/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - default
+      - openclaw-bridge
+    restart: unless-stopped
+
+networks:
+  openclaw-bridge:
+    external: true
+    name: paperclip-openclaw
+
+volumes:
+  paperclip-data:

@@ -42,6 +42,14 @@ volumes:
   paperclip-data:
 ```
 
+## Deploying on Coolify
+
+For a production deployment on [Coolify](https://coolify.io) with Claude Max subscription auth
+and OpenClaw integration, see [docs/coolify-setup.md](docs/coolify-setup.md).
+
+The included `docker-compose.yml` is designed for Coolify's Docker Compose deployment mode
+and uses Coolify's magic variables for auto-generated secrets and domain routing.
+
 ## Configuration
 
 All configuration is done through environment variables. The image sets a handful of defaults that make sense for a containerized deployment; override them as needed.
